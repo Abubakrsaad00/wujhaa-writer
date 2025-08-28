@@ -1,0 +1,129 @@
+<!-- static/widget.html -->
+<div id="wujhaa-widget" style="font-family:Tahoma, Arial; max-width:820px;border-radius:8px;background:#ffffff;padding:18px;box-shadow:0 6px 18px rgba(1,97,117,0.06);">
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div style="flex:1">
+      <h3 id="ww-title" style="margin:0;color:#016175">ورشة كتابة — صحح خطاب الدافع</h3>
+      <small id="ww-sub" style="color:#666">انسخ خطابك ثم اضغط صحح الآن — يدعم العربي والإنجليزي</small>
+    </div>
+    <div>
+      <select id="ww-lang" aria-label="language" style="padding:6px;border-radius:6px;border:1px solid #e6eef0;">
+        <option value="ar">العربية</option>
+        <option value="en">English</option>
+      </select>
+    </div>
+  </div>
+
+  <textarea id="ww-text" rows="9" style="width:100%;margin-top:10px;padding:12px;border-radius:8px;border:1px solid #e9f3f4;font-size:14px;direction:rtl;" placeholder="ألصق خطاب الدافع هنا..."></textarea>
+
+  <div style="display:flex;gap:8px;align-items:center;margin-top:8px;">
+    <label style="color:#333;">النغمة:</label>
+    <select id="ww-tone" style="padding:6px;border-radius:6px;border:1px solid #e6eef0;">
+      <option value="formal">رسمي / Formal</option>
+      <option value="academic">أكاديمي / Academic</option>
+      <option value="friendly">ودّي / Friendly</option>
+    </select>
+
+    <label style="color:#333;">الإجراء:</label>
+    <select id="ww-action" style="padding:6px;border-radius:6px;border:1px solid #e6eef0;">
+      <option value="proofread">تصحيح نحوي وصياغي</option>
+      <option value="revise">إعادة صياغة قوية</option>
+      <option value="shorten">اختصار إلى ~300 كلمة</option>
+    </select>
+
+    <button id="ww-submit" style="margin-left:auto;background:#016175;color:#fff;border:none;padding:8px 14px;border-radius:8px;cursor:pointer;">صحّح الآن</button>
+  </div>
+
+  <div id="ww-status" style="margin-top:10px;color:#666"></div>
+
+  <h4 id="ww-result-title" style="margin-top:12px;color:#016175;display:none">النسخة المحسّنة / Polished version</h4>
+  <pre id="ww-result" style="white-space:pre-wrap;background:#f9f9f9;padding:12px;border-radius:8px;min-height:160px;display:none"></pre>
+
+  <div style="display:flex;gap:8px;margin-top:8px;">
+    <button id="ww-copy" style="background:#e6f7f6;border:1px solid #d1efee;padding:8px;border-radius:8px;cursor:pointer;display:none">نسخ النتيجة</button>
+    <button id="ww-reset" style="background:#fff;border:1px solid #ddd;padding:8px;border-radius:8px;cursor:pointer">مسح</button>
+  </div>
+</div>
+
+<script>
+const API_URL = '/api/edit-letter'; // **اتركها هكذا إن نشرت المشروع على نفس نطاق wujhaa.com**
+const el = id => document.getElementById(id);
+const status = el('ww-status');
+const resultBox = el('ww-result');
+const resultTitle = el('ww-result-title');
+const submitBtn = el('ww-submit');
+
+function setRTL(enabled) {
+  const ta = el('ww-text');
+  if (enabled) { ta.style.direction = 'rtl'; ta.placeholder = 'ألصق خطاب الدافع هنا...'; }
+  else { ta.style.direction = 'ltr'; ta.placeholder = 'Paste your motivation letter here...'; }
+}
+
+el('ww-lang').addEventListener('change', (e) => {
+  const lang = e.target.value;
+  if (lang === 'ar') {
+    el('ww-title').textContent = 'ورشة كتابة — صحح خطاب الدافع';
+    el('ww-sub').textContent = 'انسخ خطابك ثم اضغط صحح الآن — يدعم العربي والإنجليزي';
+    setRTL(true);
+  } else {
+    el('ww-title').textContent = 'Writing Workshop — Improve your motivation letter';
+    el('ww-sub').textContent = 'Paste your letter then click Correct — supports Arabic & English';
+    setRTL(false);
+  }
+});
+
+el('ww-reset').addEventListener('click', () => {
+  el('ww-text').value = '';
+  status.textContent = '';
+  resultBox.textContent = '';
+  resultBox.style.display = 'none';
+  resultTitle.style.display = 'none';
+  el('ww-copy').style.display = 'none';
+});
+
+el('ww-copy').addEventListener('click', async () => {
+  const t = resultBox.textContent;
+  if (!t) return alert('لا توجد نتيجة للنسخ / No result to copy');
+  try { await navigator.clipboard.writeText(t); alert('تم النسخ') } catch(e){ alert('فشل النسخ') }
+});
+
+submitBtn.addEventListener('click', async () => {
+  const text = el('ww-text').value.trim();
+  if (!text) { status.textContent = (el('ww-lang').value === 'ar') ? 'أدخل نصًا أولاً.' : 'Please enter text first.'; return; }
+
+  submitBtn.disabled = true;
+  status.textContent = (el('ww-lang').value === 'ar') ? 'جاري المعالجة...' : 'Processing...';
+
+  try {
+    const payload = {
+      text,
+      tone: el('ww-tone').value,
+      action: el('ww-action').value,
+      language: el('ww-lang').value === 'ar' ? 'ar' : 'en'
+    };
+
+    const r = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    const j = await r.json();
+    if (!r.ok) {
+      status.textContent = (el('ww-lang').value === 'ar') ? ('خطأ: ' + (j.error || JSON.stringify(j))) : ('Error: ' + (j.error || JSON.stringify(j)));
+      resultBox.style.display = 'none';
+      resultTitle.style.display = 'none';
+      el('ww-copy').style.display = 'none';
+    } else {
+      status.textContent = (el('ww-lang').value === 'ar') ? 'انتهى — راجع النتيجة أدناه.' : 'Done — see result below.';
+      resultBox.textContent = j.result || JSON.stringify(j.raw || j, null, 2);
+      resultBox.style.display = 'block';
+      resultTitle.style.display = 'block';
+      el('ww-copy').style.display = 'inline-block';
+    }
+  } catch (err) {
+    status.textContent = (el('ww-lang').value === 'ar') ? ('خطأ في الاتصال: ' + err.message) : ('Network error: ' + err.message);
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+</script>
