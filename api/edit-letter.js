@@ -92,6 +92,8 @@ Tone directions mapping:
 - friendly: warm, conversational, approachable.
 - classical: eloquent, literary Arabic (if language=ar).
 - colloquial: natural everyday speech (use sparingly for personal statements only).
+- If tone is "academic": produce a formal academic paraphrase — use precise, discipline-appropriate vocabulary...
+You are a skilled paraphraser and style coach. Task: Paraphrase the original text...
 `,
 
     };
