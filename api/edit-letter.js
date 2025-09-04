@@ -131,7 +131,7 @@ ${text}
     const resp = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": Bearer ${OPENROUTER_API_KEY},
+        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
         "HTTP-Referer": process.env.ALLOWED_ORIGIN || 'https://wujhaa.com',
         "X-Title": "wujhaa.com - Writing Workshop"
